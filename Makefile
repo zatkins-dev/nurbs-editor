@@ -1,21 +1,23 @@
 CPP = g++ -std=c++14
-INC = -I../cryphutil -I../fontutil -I../glslutil -I../ImageReader -I../mvcutil -I/usr/local/include -I. -I./src -I./src/inc
+INC = -I../cryphutil -I../ImageReader -I../fontutil -I../glslutil -I../mvcutil
 
 # >>> FOR LINUX, uncomment next few lines; comment out the MAC ones.
 C_FLAGS = -fPIC -g -c $(INC) -DGL_GLEXT_PROTOTYPES
 GL_LIB_LOC = -L/usr/lib/nvidia-375
 GL_LIBRARIES = $(GL_LIB_LOC) -lglfw -lGLU -lGL
 MAKE = make
+BUILD = fedora
 # >>> FOR MAC, uncomment next few lines; comment out previous linux ones.
 # C_FLAGS = -fPIC -g -c $(INC) -DGLFW_INCLUDE_GLEXT -DGLFW_INCLUDE_GLCOREARB -DGL_SILENCE_DEPRECATION
 # GL_LIBRARIES = -L/usr/local/lib -lglfw -framework OpenGL
 # MAKE = make -f MakefileMac
+# BUILD = mac
 # >>> END: FOR LINUX - FOR MAC
-VPATH = src:src/inc:../lib
-LINK = g++ -fPIC -g
-LOCAL_UTIL_LIBRARIES = ../lib/libcryph.so ../lib/libfont.so ../lib/libglsl.so ../lib/libImageReader.so ../lib/libmvc.so
 
-OBJS = obj/main.o obj/ExtendedController.o obj/PhongMaterial.o obj/SceneElement.o obj/Tower.o obj/Facade.o obj/LightPole.o obj/Street.o obj/Ground.o obj/Sign.o obj/TextureInfo.o obj/TexManager.o obj/Skybox.o
+LINK = g++ -fPIC -g -Wall
+LOCAL_UTIL_LIBRARIES = ../lib/libcryph.so ../lib/libfont.so ../lib/libglsl.so ../lib/libImageReader.so ../lib/libmvc.so ./lib/libnanogui.so
+
+OBJS = main.o SceneElement.o InteractiveAffPoint.o Curve.o CardinalSpline.o BezierCurve.o
 
 main: ensure-dirs $(OBJS) $(LOCAL_UTIL_LIBRARIES)
 	$(LINK) -o $@ $(OBJS) $(LOCAL_UTIL_LIBRARIES) $(GL_LIBRARIES)
@@ -35,31 +37,14 @@ main: ensure-dirs $(OBJS) $(LOCAL_UTIL_LIBRARIES)
 ../lib/libmvc.so: ../mvcutil/Controller.h ../mvcutil/Controller.c++ ../mvcutil/ModelView.h ../mvcutil/ModelView.c++
 	(cd ../mvcutil; $(MAKE))
 
+./lib/libnanogui.so: 
+	echo "Building NanoGUI...\n" 
+	mkdir ./deps/nanogui/build/$(BUILD)
+	cd ./deps/nanogui/build/$(BUILD)
+	cmake ../.. -D NANOGUI_BACKEND:STRING=OpenGL -D NANOGUI_BUILD_EXAMPLES:BOOL=OFF -D NANOGUI_BUILD_GLAD:BOOL=OFF -D NANOGUI_BUILD_GLFW:BOOL=OFF -D NANOGUI_BUILD_PYTHON:BOOL=OFF -D NANOGUI_BUILD_SHARED:BOOL=ON -D NANOGUI_INSTALL:BOOL=OFF
+	make; ln -s libnanogui.so ../../../../lib/libnanogui.so
+
 obj/main.o: main.c++
-	$(CPP) $(C_FLAGS) $< -o $@
-obj/ExtendedController.o: ExtendedController.c++
-	$(CPP) $(C_FLAGS) $< -o $@
-obj/PhongMaterial.o: PhongMaterial.c++
-	$(CPP) $(C_FLAGS) $< -o $@
-obj/SceneElement.o: SceneElement.c++ SceneElement.h
-	$(CPP) $(C_FLAGS) $< -o $@
-obj/Tower.o: Tower.c++ Tower.h
-	$(CPP) $(C_FLAGS) $< -o $@
-obj/Facade.o: Facade.c++ Facade.h
-	$(CPP) $(C_FLAGS) $< -o $@
-obj/Street.o: Street.c++ Street.h
-	$(CPP) $(C_FLAGS) $< -o $@
-obj/Ground.o: Ground.c++ Ground.h
-	$(CPP) $(C_FLAGS) $< -o $@
-obj/Sign.o: Sign.c++ Sign.h
-	$(CPP) $(C_FLAGS) $< -o $@
-obj/LightPole.o: LightPole.c++ LightPole.h
-	$(CPP) $(C_FLAGS) $< -o $@
-obj/TextureInfo.o: TextureInfo.c++
-	$(CPP) $(C_FLAGS) $< -o $@
-obj/TexManager.o: TexManager.c++ TexManager.h
-	$(CPP) $(C_FLAGS) $< -o $@
-obj/Skybox.o: Skybox.c++
 	$(CPP) $(C_FLAGS) $< -o $@
 
 .PHONY : clean
