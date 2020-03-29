@@ -4,7 +4,8 @@
 
 #include "BezierCurve.h"
 #include "CardinalSpline.h"
-#include "GLFWController.h"
+#include "Menu.h"
+#include "NanoGUIController.h"
 #include "SceneElement.h"
 #include "ShaderIF.h"
 
@@ -75,13 +76,16 @@ void set3DViewingInformation(double xyz[6]) {
     ModelView::setECZminZmax(zmin, zmax);
 }
 
+void initGUI(NanoGUIController& c) { Menu* menu = new Menu(c.getNanoGUIScreen()); }
+
 int main(int argc, char* argv[]) {
     string fname;
     if (argc > 1) {
         fname = argv[1];
         std::cout << "Provided file: " << fname << '\n';
     }
-    GLFWController c(argv[0]);
+    NanoGUIController c("Surface Editor");
+    initGUI(c);
     c.reportVersions(std::cout);
     // ShaderIF* sIF = new ShaderIF(BezierCurve::bezShaders, 4);
     ShaderIF* sIFpoints = new ShaderIF("shaders/basic.vert", "shaders/phong.frag");

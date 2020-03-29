@@ -43,6 +43,7 @@ void InteractiveAffPoint::checkForPick() {
 void InteractiveAffPoint::moveBy(AffVector d) {
     // std::cout << "IAP: move point [" << *this << "] by <" << d << ">\n";
     operator+=(d);
+    updateMCBoundingBox(*this);
     if (parent) {
         reinterpret_cast<Curve*>(parent)->updatePoint();
     }

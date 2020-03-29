@@ -1,5 +1,5 @@
-CPP = g++ -std=c++14
-INC = -I../cryphutil -I../ImageReader -I../fontutil -I../glslutil -I../mvcutil -I./ext/nanogui/src
+CPP = g++ -std=c++17
+INC = -I../cryphutil -I../ImageReader -I../fontutil -I../glslutil -I../mvcutil -I./ext/nanogui/include
 
 # >>> FOR LINUX, uncomment next few lines; comment out the MAC ones.
 C_FLAGS = -fPIC -g -c $(INC) -DGL_GLEXT_PROTOTYPES 
@@ -13,11 +13,11 @@ BUILD = fedora
 # MAKE = make -f MakefileMac
 # BUILD = mac
 # >>> END: FOR LINUX - FOR MAC
-VPATH = src:src/inc:../lib:lib
+VPATH = src:src/inc:../lib:lib:ext
 LINK = g++ -fPIC -g -Wall
 LOCAL_UTIL_LIBRARIES = ../lib/libcryph.so ../lib/libfont.so ../lib/libglsl.so ../lib/libImageReader.so ../lib/libmvc.so lib/libnanogui.so
 
-OBJS = obj/main.o obj/SceneElement.o obj/InteractiveAffPoint.o obj/Curve.o obj/CardinalSpline.o obj/BezierCurve.o
+OBJS = obj/main.o obj/SceneElement.o obj/InteractiveAffPoint.o obj/Curve.o obj/CardinalSpline.o obj/BezierCurve.o obj/NanoGUIController.o obj/Menu.o
 
 main: ensure-dirs $(OBJS) $(LOCAL_UTIL_LIBRARIES)
 	$(LINK) -o $@ $(OBJS) $(LOCAL_UTIL_LIBRARIES) $(GL_LIBRARIES) -Wl,-rpath ./lib
@@ -37,30 +37,33 @@ main: ensure-dirs $(OBJS) $(LOCAL_UTIL_LIBRARIES)
 ../lib/libmvc.so: ../mvcutil/Controller.h ../mvcutil/Controller.c++ ../mvcutil/ModelView.h ../mvcutil/ModelView.c++
 	(cd ../mvcutil; $(MAKE))
 
-./lib/libnanogui.so: 
+./lib/libnanogui.so: ext/nanogui/include/nanogui/nanogui.h
 	echo "Building NanoGUI...\n" 
 	mkdir -p ./ext/nanogui/build/$(BUILD)
 	cmake -S ./ext/nanogui -B ./ext/nanogui/build/$(BUILD) -D NANOGUI_BACKEND:STRING=OpenGL -D NANOGUI_BUILD_EXAMPLES:BOOL=OFF -D NANOGUI_BUILD_GLAD:BOOL=OFF -D NANOGUI_BUILD_GLFW:BOOL=OFF -D NANOGUI_BUILD_PYTHON:BOOL=OFF -D NANOGUI_BUILD_SHARED:BOOL=ON -D NANOGUI_INSTALL:BOOL=OFF;\
 	(cd ./ext/nanogui/build/$(BUILD); make)
 	cp ./ext/nanogui/build/$(BUILD)/libnanogui.so lib/libnanogui.so
 
-obj/main.o: main.c++
-	$(CPP) $(C_FLAGS) $< -o $@
+obj/%.o : %.cpp 
+	$(CPP) $(C_FLAGS) -o $@ -c $<
 
-obj/SceneElement.o: SceneElement.c++ SceneElement.h
-	$(CPP) $(C_FLAGS) $< -o $@
+# obj/main.o: main.c++
+# 	$(CPP) $(C_FLAGS) $< -o $@
 
-obj/InteractiveAffPoint.o: InteractiveAffPoint.cpp InteractiveAffPoint.h
-	$(CPP) $(C_FLAGS) $< -o $@
+# obj/SceneElement.o: SceneElement.c++ SceneElement.h
+# 	$(CPP) $(C_FLAGS) $< -o $@
 
-obj/Curve.o: Curve.cpp Curve.h
-	$(CPP) $(C_FLAGS) $< -o $@
+# obj/InteractiveAffPoint.o: InteractiveAffPoint.cpp InteractiveAffPoint.h
+# 	$(CPP) $(C_FLAGS) $< -o $@
 
-obj/BezierCurve.o: BezierCurve.cpp BezierCurve.h
-	$(CPP) $(C_FLAGS) $< -o $@
+# obj/Curve.o: Curve.cpp Curve.h
+# 	$(CPP) $(C_FLAGS) $< -o $@
 
-obj/CardinalSpline.o: CardinalSpline.cpp CardinalSpline.h
-	$(CPP) $(C_FLAGS) $< -o $@
+# obj/BezierCurve.o: BezierCurve.cpp BezierCurve.h
+# 	$(CPP) $(C_FLAGS) $< -o $@
+
+# obj/CardinalSpline.o: CardinalSpline.cpp CardinalSpline.h
+# 	$(CPP) $(C_FLAGS) $< -o $@
 
 .PHONY : clean
 clean: 
