@@ -4,3 +4,6 @@
 [submodule "ext/nanogui"]
 	path = ext/nanogui
 	url = git@github.com:mitsuba-renderer/nanogui.git
+[submodule "ext/ext/imgui"]
+	path = ext/ext/imgui
+	url = git@github.com:ocornut/imgui.git
