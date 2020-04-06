@@ -1,10 +1,15 @@
 CPP = g++ -std=c++17
-INC = -I../cryphutil -I../ImageReader -I../fontutil -I../glslutil -I../mvcutil -I./ext/nanogui/include
+INC = -I../cryphutil -I../ImageReader -I../fontutil -I../glslutil -I../mvcutil -I./ext/imgui
+ROOT_PATH = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+IMGUI_LOADER = include/imgui_loader_glext.h
+IMGUI_CONFIG = include/imconfig.h
 
 # >>> FOR LINUX, uncomment next few lines; comment out the MAC ones.
-C_FLAGS = -fPIC -g -c $(INC) -DGL_GLEXT_PROTOTYPES 
-GL_LIB_LOC = -L/usr/lib/nvidia-375
-GL_LIBRARIES = $(GL_LIB_LOC) -lglfw -lGLU -lGL
+C_FLAGS = -fPIC -g -c $(INC) -DGL_GLEXT_PROTOTYPES
+C_FLAGS += -DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=\"$(ROOT_PATH)$(IMGUI_LOADER)\"
+C_FLAGS += -DIMGUI_USER_CONFIG=\"$(ROOT_PATH)$(IMGUI_CONFIG)\"
+GL_LIB_LOC = -L/usr/lib/nvidia-375 
+GL_LIBRARIES = $(GL_LIB_LOC) -lglfw -lGLU -lGL 
 MAKE = make
 BUILD = fedora
 # >>> FOR MAC, uncomment next few lines; comment out previous linux ones.
@@ -13,12 +18,14 @@ BUILD = fedora
 # MAKE = make -f MakefileMac
 # BUILD = mac
 # >>> END: FOR LINUX - FOR MAC
-VPATH = src:src/inc:../lib:lib:ext
+VPATH = src:src/interactive:../lib:lib:ext:ext/imgui:ext/imgui/examples
 LINK = g++ -fPIC -g -Wall
-LOCAL_UTIL_LIBRARIES = ../lib/libcryph.so ../lib/libfont.so ../lib/libglsl.so ../lib/libImageReader.so ../lib/libmvc.so lib/libnanogui.so
+LOCAL_UTIL_LIBRARIES = ../lib/libcryph.so ../lib/libfont.so ../lib/libglsl.so ../lib/libImageReader.so ../lib/libmvc.so
 
-OBJS = obj/main.o obj/SceneElement.o obj/InteractiveAffPoint.o obj/Curve.o obj/CardinalSpline.o obj/BezierCurve.o obj/NanoGUIController.o obj/Menu.o
-
+OBJS = obj/main.o obj/SceneElement.o obj/ImGUIMenu.o obj/ShaderIFManager.o
+OBJS += obj/Interactive.o obj/InteractiveCurve.o obj/InteractivePoint.o 
+OBJS += ext/imgui/build/obj/imgui_impl_glfw.o ext/imgui/build/obj/imgui_impl_opengl3.o
+OBJS += ext/imgui/build/obj/imgui.o ext/imgui/build/obj/imgui_demo.o ext/imgui/build/obj/imgui_draw.o ext/imgui/build/obj/imgui_widgets.o
 main: ensure-dirs $(OBJS) $(LOCAL_UTIL_LIBRARIES)
 	$(LINK) -o $@ $(OBJS) $(LOCAL_UTIL_LIBRARIES) $(GL_LIBRARIES) -Wl,-rpath ./lib
 
@@ -37,40 +44,22 @@ main: ensure-dirs $(OBJS) $(LOCAL_UTIL_LIBRARIES)
 ../lib/libmvc.so: ../mvcutil/Controller.h ../mvcutil/Controller.c++ ../mvcutil/ModelView.h ../mvcutil/ModelView.c++
 	(cd ../mvcutil; $(MAKE))
 
-./lib/libnanogui.so: ext/nanogui/include/nanogui/nanogui.h
-	echo "Building NanoGUI...\n" 
-	mkdir -p ./ext/nanogui/build/$(BUILD)
-	cmake -S ./ext/nanogui -B ./ext/nanogui/build/$(BUILD) -D NANOGUI_BACKEND:STRING=OpenGL -D NANOGUI_BUILD_EXAMPLES:BOOL=OFF -D NANOGUI_BUILD_GLAD:BOOL=OFF -D NANOGUI_BUILD_GLFW:BOOL=OFF -D NANOGUI_BUILD_PYTHON:BOOL=OFF -D NANOGUI_BUILD_SHARED:BOOL=ON -D NANOGUI_INSTALL:BOOL=OFF;\
-	(cd ./ext/nanogui/build/$(BUILD); make)
-	cp ./ext/nanogui/build/$(BUILD)/libnanogui.so lib/libnanogui.so
-
 obj/%.o : %.cpp 
 	$(CPP) $(C_FLAGS) -o $@ -c $<
 
-# obj/main.o: main.c++
-# 	$(CPP) $(C_FLAGS) $< -o $@
-
-# obj/SceneElement.o: SceneElement.c++ SceneElement.h
-# 	$(CPP) $(C_FLAGS) $< -o $@
-
-# obj/InteractiveAffPoint.o: InteractiveAffPoint.cpp InteractiveAffPoint.h
-# 	$(CPP) $(C_FLAGS) $< -o $@
-
-# obj/Curve.o: Curve.cpp Curve.h
-# 	$(CPP) $(C_FLAGS) $< -o $@
-
-# obj/BezierCurve.o: BezierCurve.cpp BezierCurve.h
-# 	$(CPP) $(C_FLAGS) $< -o $@
-
-# obj/CardinalSpline.o: CardinalSpline.cpp CardinalSpline.h
-# 	$(CPP) $(C_FLAGS) $< -o $@
+ext/imgui/build/obj/%.o: %.cpp
+	$(CPP) $(C_FLAGS) -o $@ -c $<
 
 .PHONY : clean
 clean: 
 	rm -rf obj bin main
 
+.PHONY : clean-imgui
+clean-imgui: 
+	rm -rf ext/imgui/build/obj/*
+
 .PHONY : clean-all
-clean-all: clean
+clean-all: clean clean-imgui
 	rm -rf  ../cryphutil/*.o ../cryphutil/*.so \
 		../fontutil/*.o ../fontutil/*.so \
 		../glslutil/*.o ../glslutil/*.so \

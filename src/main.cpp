@@ -1,44 +1,25 @@
 // main.c++ - main program for complex square root visualization
 
+#include "ImGUIMenu.h"
+
 #include <stdlib.h>
 
-#include "BezierCurve.h"
-#include "CardinalSpline.h"
-#include "Menu.h"
-#include "NanoGUIController.h"
+#include "GLFWController.h"
 #include "SceneElement.h"
 #include "ShaderIF.h"
+#include "interactive/InteractiveCurve.h"
 
-void createScene(GLFWController& c, ShaderIF* sIFpoint, ShaderIF* sIFbezier, ShaderIF* sIFspline,
-                 string filename = "") {
-    if (filename != "") {
-        try {
-            auto curves = Curve::readCurvesFromFile(filename, sIFpoint, sIFbezier, sIFspline);
-            for (auto* crv : curves)
-                c.addModel(crv);
-        } catch (std::runtime_error e) {
-            std::cout << e.what() << std::endl;
-        }
-    } else {
-        InteractiveAffPoint* iptsBez[4]{
-            new InteractiveAffPoint(sIFpoint, AffPoint(1, 1, 0)),
-            new InteractiveAffPoint(sIFpoint, AffPoint(-1, 1, 0)),
-            new InteractiveAffPoint(sIFpoint, AffPoint(1, -1, 0)),
-            new InteractiveAffPoint(sIFpoint, AffPoint(-1, -1, 0)),
-        };
-        auto bez = new BezierCurve(sIFbezier, sIFpoint, iptsBez);
-        c.addModel(bez);
-        vector<InteractiveAffPoint*> ipts{
-            new InteractiveAffPoint(sIFpoint, AffPoint(1, 1, 0)),
-            new InteractiveAffPoint(sIFpoint, AffPoint(-1, 1, 0)),
-            new InteractiveAffPoint(sIFpoint, AffPoint(-2, -1, 0)),
-            new InteractiveAffPoint(sIFpoint, AffPoint(2, -1, 0)),
-            new InteractiveAffPoint(sIFpoint, AffPoint(3, -1, 0)),
-            new InteractiveAffPoint(sIFpoint, AffPoint(4, 1, 0)),
-        };
-        CardinalSpline* spl = new CardinalSpline(sIFspline, sIFpoint, ipts);
-        c.addModel(spl);
-    }
+using std::string;
+
+void createNewScene(GLFWController& c, string filename = "") {
+    vector<AffPoint> pts{
+        AffPoint(-1, 0, 0), AffPoint(-1, 1, 0), AffPoint(0, 1, 0),
+        AffPoint(1, 1, 0),  AffPoint(1, 0, 0),
+    };
+    InteractiveCurve* crv = new InteractiveCurve(pts);
+
+    c.addModel(crv);
+    crv->print(std::cout);
 }
 
 void set3DViewingInformation(double xyz[6]) {
@@ -76,7 +57,16 @@ void set3DViewingInformation(double xyz[6]) {
     ModelView::setECZminZmax(zmin, zmax);
 }
 
-void initGUI(NanoGUIController& c) { Menu* menu = new Menu(c.getNanoGUIScreen()); }
+void initGUI(GLFWController& c) { c.addModel(new ImGUIMenu()); }
+
+void initShaders() {
+    ShaderIFManager* manager = new ShaderIFManager();
+    manager->createShader("point", InteractivePoint::shaders.data(),
+                          InteractivePoint::shaders.size());
+    manager->createShader("nurbsCurve", InteractiveCurve::shaders.data(),
+                          InteractiveCurve::shaders.size());
+    SceneElement::setShaderManager(manager);
+}
 
 int main(int argc, char* argv[]) {
     string fname;
@@ -84,16 +74,16 @@ int main(int argc, char* argv[]) {
         fname = argv[1];
         std::cout << "Provided file: " << fname << '\n';
     }
-    NanoGUIController c("Surface Editor");
-    initGUI(c);
+    GLFWController c("Surface Editor");
     c.reportVersions(std::cout);
     // ShaderIF* sIF = new ShaderIF(BezierCurve::bezShaders, 4);
-    ShaderIF* sIFpoints = new ShaderIF("shaders/basic.vert", "shaders/phong.frag");
-    ShaderIF* sIFbezier = new ShaderIF(BezierCurve::bezShaders, 4);
-    ShaderIF* sIFspline = new ShaderIF(CardinalSpline::splineShaders, 4);
+    // ShaderIF* sIFpoints = new ShaderIF("shaders/basic.vert", "shaders/phong.frag");
+    // ShaderIF* sIFbezier = new ShaderIF(BezierCurve::bezShaders, 4);
+    // ShaderIF* sIFspline = new ShaderIF(CardinalSpline::splineShaders, 4);
 
-    createScene(c, sIFpoints, sIFbezier, sIFspline, fname);
-
+    // createScene(c, sIFpoints, sIFbezier, sIFspline, fname);
+    initShaders();
+    createNewScene(c);
     glClearColor(1.0, 1.0, 1.0, 1.0);
 
     // callbacks for picking and dragging
@@ -111,7 +101,7 @@ int main(int argc, char* argv[]) {
     set3DViewingInformation(xyz);
     // c.setDebug(true);
     SceneElement::setProjection(ORTHOGONAL);
-
+    initGUI(c);
     c.run();
 
     return 0;

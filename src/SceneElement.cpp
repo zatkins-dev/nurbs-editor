@@ -35,6 +35,8 @@ Matrix3x3 SceneElement::dragRestriction = Matrix3x3::IdentityMatrix;
 
 const double SceneElement::clickThreshold = 0.05;
 
+ShaderIFManager* SceneElement::shaderIFManager;
+
 SceneElement::SceneElement(ShaderIF* sIF) : shaderIF(sIF) {}
 
 SceneElement::~SceneElement() {}
@@ -102,8 +104,6 @@ void SceneElement::clickReleasedCB(Controller::MouseButton b) {
     if (currentlyPickedObject)
         currentlyPickedObject->clickReleased();
     minDist = -1;
-    currentlyPickedObject = nullptr;
-    dragRestriction = Matrix3x3::IdentityMatrix;
 }
 
 bool SceneElement::doneSendingClickToInstancesCB() {
@@ -279,3 +279,5 @@ bool SceneElement::toggleLightDefinedInMC(int lightIndex) {
     lightPosInModelCoordinates[lightIndex] = !lightPosInModelCoordinates[lightIndex];
     return true;
 }
+
+void SceneElement::setShaderManager(ShaderIFManager* manager) { shaderIFManager = manager; }

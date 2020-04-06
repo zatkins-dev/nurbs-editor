@@ -4,7 +4,6 @@
 
 #ifndef SCENEELEMENT_H
 #define SCENEELEMENT_H
-
 #ifdef __APPLE__
 #include "GLFW/glfw3.h"
 #else
@@ -19,6 +18,7 @@
 #include "ModelView.h"
 #include "PhongMaterial.h"
 #include "ShaderIF.h"
+#include "ShaderIFManager.h"
 
 #include "Matrix3x3.h"
 
@@ -60,11 +60,13 @@ class SceneElement : public ModelView {
     // move object by vector
     virtual void moveBy(AffVector dist) {}
     virtual void clickReleased() {}
+    static void setShaderManager(ShaderIFManager* sIFmanager);
 
   protected:
     static void getECDeltas(double& ec_dx, double& ec_dy);
     static double ldsXprev, ldsYprev;
     ShaderIF* shaderIF;
+    static ShaderIFManager* shaderIFManager;
     static bool currentPickTriggerIsHover;
     static SceneElement* currentlyPickedObject;
     static AffPoint clickPos;
