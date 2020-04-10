@@ -60,22 +60,32 @@ vector<InteractivePoint*> Interactive::getSelectedChildren() {
 }
 
 void Interactive::update() {
-    for (auto c : children)
+    resetMCBoundingBox();
+    for (auto c : children) {
         if (c->dirtyBit) {
             c->update();
-            c->dirtyBit = false;
         }
+        updateMCBoundingBox(c->P());
+    }
     p_update();
+    if (!parent) {
+        dynamic_cast<ExtendedController*>(Controller::getCurrentController())
+            ->updateMCBoundingBox();
+    }
     dirtyBit = false;
 }
 
 void Interactive::render() {
     if (dirtyBit)
         update();
-    for (auto c : children) {
-        c->render();
-    }
-    p_render();
+    if (renderObject)
+        p_render();
+    if (renderPts)
+        for (auto c : children) {
+            c->render();
+        }
+    if (renderPoly)
+        p_renderPoly();
 }
 
 Interactive* Interactive::getParent() { return parent; }

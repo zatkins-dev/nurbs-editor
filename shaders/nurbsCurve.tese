@@ -12,67 +12,12 @@ uniform int knotIndex = 3;
 uniform mat4 ec_lds;
 uniform mat4 mc_ec;
 
-// in PVA {
-//     vec3 ecPosition;
-//     vec3 ecUnitNormal;
-//     vec2 texCoords;
-// }
-// pvaIn[];
-
 out PVA {
     vec3 ecPosition;
     vec3 ecUnitNormal;
     vec2 texCoords;
 }
 pvaOut;
-
-// void getBasisFcns(float t, inout float fnsAtT[MAX_DEGREE + 1]) {
-//     // int K = T.length();
-//     // int selectedKnot = -1;
-//     // for (int i = 0; i < gl_in.length() + order; i++) {
-//     //     int currKnot = order - 1 + i;
-//     //     if (T[currKnot] <= t && t < T[currKnot + 1]) {
-//     //         selectedKnot = i;
-//     //         break;
-//     //     }
-//     // }
-//     // if (selectedKnot == -1)
-//     //     selectedKnot = gl_in.length() - 1;
-
-//     int i = knotIndex - (order - 1);
-//     for (int j = 0; j < order - 1; j++)
-//         fnsAtT[j] = 0;
-//     fnsAtT[order - 1] = 1;
-//     for (int k = 1; k < order; k++) {
-//         int j = order - 1 - k;
-//         int ii = j + i;
-//         if (abs(T[ii + k + 1] - T[ii + 1]) > 0.000001)
-//             fnsAtT[j] = (T[ii + k + 1] - t) / (T[ii + k + 1] - T[ii + 1]) * fnsAtT[j + 1];
-//         j++;
-//         for (ii = j + i; j < order - 1; j++) {
-//             if (abs(T[ii + k] - T[ii]) > 0.000001)
-//                 fnsAtT[j] *= (t - T[ii]) / (T[ii + k] - T[ii]);
-//             else
-//                 fnsAtT[j] = 0;
-//             if (abs(T[ii + k + 1] - T[ii + 1]) > 0.000001)
-//                 fnsAtT[j] += (T[ii + k + 1] - t) / (T[ii + k + 1] - T[ii + 1]) * fnsAtT[j + 1];
-//         }
-//         ii = order - 1 + i;
-//         if (abs(T[ii + k] - T[ii]) > 0.000001) {
-//             fnsAtT[order - 1] *= (t - T[ii]) / (T[ii + k] - T[ii]);
-//         }
-//     }
-// }
-
-// vec4 evaluateCurveAtT(float t) {
-//     float fcnsAtT[MAX_DEGREE + 1];
-//     getBasisFcns(t, fcnsAtT);
-//     vec4 crvPnt = vec4(0);
-//     for (int i = 0; i < order; i++)
-//         crvPnt += fcnsAtT[i] * gl_in[i].gl_Position;
-
-//     return crvPnt;
-// }
 
 vec4 evalCurve(float t) {
     vec4 v[MAX_DEGREE + 1];

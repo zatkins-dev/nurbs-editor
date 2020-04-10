@@ -10,7 +10,7 @@
 
 class InteractivePoint : public Interactive, public ProjPoint {
   public:
-    InteractivePoint(AffPoint, double);
+    InteractivePoint(AffPoint, double, int, int = 0);
     virtual ~InteractivePoint() {
         if (sphere)
             delete sphere;
@@ -31,14 +31,18 @@ class InteractivePoint : public Interactive, public ProjPoint {
         z = xyzw.z * xyzw.w;
         w = xyzw.w;
     }
+    std::function<AffPoint()> P = [this]() { return AffPoint(x, y, z) / w; };
+    int s() const { return sIndex; }
+    int t() const { return tIndex; }
 
   protected:
     void p_checkForPick();
     void p_moveBy(AffVector dist);
     void p_update();
     void p_render();
+    int tIndex;
+    int sIndex;
 
   private:
-    std::function<AffPoint()> P = [this]() { return AffPoint(x, y, z) / w; };
     BasicShapeRenderer* sphere;
 };

@@ -32,6 +32,7 @@ using namespace gl;
 
 #include "SceneElement.h"
 
+#include "ExtendedController.h"
 #include "ShaderIFManager.h"
 #include "interactive/Interactive.h"
 #include "interactive/InteractiveCurve.h"
@@ -63,6 +64,7 @@ class ImGUIMenu : public SceneElement {
 
   private:
     GLFWwindow* window;
+    GLFWwindow* renderWindow;
     std::queue<function<void()>> action_queue;
 
     typedef float vec4[4];
@@ -99,6 +101,7 @@ class ImGUIMenu : public SceneElement {
     void addNurbsCurve();
     void addNurbsSurface();
     void applyDragRestriction();
+    void resetView();
 
     const vector<AffPoint> DEFAULT_CURVE_PTS{
         AffPoint(-2, 0, 0),

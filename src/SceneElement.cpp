@@ -3,21 +3,19 @@
 
 #include "OpenGLImageReader.h"
 
-float SceneElement::lightPos[4 * MAX_NUM_LIGHTS] = {0.25, -0.5, 1.0, 0.0,   0.0, 0.0,
-                                                    1.0,  0.0,  0.0, 10.25, 8.5, 1.0};
+float SceneElement::lightPos[4 * MAX_NUM_LIGHTS] = {0.25, -0.5, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0};
 
 // Are coordinates in "lightPos" stored in MC or EC?
-bool SceneElement::lightPosInModelCoordinates[MAX_NUM_LIGHTS] = {true, false, true};
+bool SceneElement::lightPosInModelCoordinates[MAX_NUM_LIGHTS] = {true, true};
 // The following is the buffer actually sent to GLSL. It will contain a copy of
 // the (x,y,z,w) for light sources defined in EC; it will contain the coordinates
 // after transformation to EC if the position was originally specified in MC.
 float posToGLSL[4 * MAX_NUM_LIGHTS];
 
-float SceneElement::lightStrength[3 * MAX_NUM_LIGHTS] = {0.7, 0.7, 0.7, 0.8, 0.8,
-                                                         0.8, 0.7, 0.7, 0.7};
+float SceneElement::lightStrength[3 * MAX_NUM_LIGHTS] = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
 float SceneElement::globalLightScale = 1.0; // a factor for 'lightStrength'
 
-float SceneElement::globalAmbient[] = {0.9, 0.9, 0.9};
+float SceneElement::globalAmbient[] = {0.5, 0.5, 0.5};
 
 bool SceneElement::currentPickTriggerIsHover = false;
 SceneElement* SceneElement::currentlyPickedObject = nullptr;
@@ -40,6 +38,11 @@ ShaderIFManager* SceneElement::shaderIFManager;
 SceneElement::SceneElement(ShaderIF* sIF) : shaderIF(sIF) {}
 
 SceneElement::~SceneElement() {}
+
+void SceneElement::resetMCBoundingBox() {
+    AffPoint(999999, 999999, 999999).aCoords(min);
+    AffPoint(-999999, -999999, -999999).aCoords(max);
+}
 
 void SceneElement::updateMCBoundingBox(AffPoint xyz) {
     for (int i = 0; i < 3; i++) {

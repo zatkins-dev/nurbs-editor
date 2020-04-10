@@ -1,10 +1,10 @@
 #include "ImGUIMenu.h"
 #include <stdio.h>
 ImGUIMenu::ImGUIMenu() : SceneElement(shaderIFManager->get("point")) {
-    GLFWwindow* old_window = glfwGetCurrentContext();
+    renderWindow = glfwGetCurrentContext();
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    window = glfwCreateWindow(1280, 720, "Nurbs Editor Menu", NULL, old_window);
+    window = glfwCreateWindow(1280, 720, "Nurbs Editor Menu", NULL, renderWindow);
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
@@ -25,7 +25,7 @@ ImGUIMenu::ImGUIMenu() : SceneElement(shaderIFManager->get("point")) {
     ImGui_ImplOpenGL3_Init(glsl_version);
     initRestrictions();
 
-    glfwMakeContextCurrent(old_window);
+    glfwMakeContextCurrent(renderWindow);
 }
 
 ImGUIMenu::~ImGUIMenu() {
@@ -64,7 +64,7 @@ void ImGUIMenu::initRestrictions() {
 }
 
 void ImGUIMenu::render() {
-    GLFWwindow* prevCtx = glfwGetCurrentContext();
+    renderWindow = glfwGetCurrentContext();
     glfwMakeContextCurrent(window);
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -76,7 +76,37 @@ void ImGUIMenu::render() {
         ImGui::Checkbox("Show Add Window", &show_add_window);
         ImGui::Checkbox("Show Edit Window", &show_edit_window);
         ImGui::Checkbox("Show Drag Window", &show_drag_window);
-
+        ImGui::Separator();
+        if (ImGui::Button("Reset View")) {
+            resetView();
+        }
+        if (ImGui::Button("Rotate x -90")) {
+            addToGlobalRotationDegrees(-90, 0, 0);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Rotate x +90")) {
+            addToGlobalRotationDegrees(90, 0, 0);
+        }
+        if (ImGui::Button("Rotate y -90")) {
+            addToGlobalRotationDegrees(0, -90, 0);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Rotate y +90")) {
+            addToGlobalRotationDegrees(0, 90, 0);
+        }
+        if (ImGui::Button("Rotate z -90")) {
+            addToGlobalRotationDegrees(0, 0, -90);
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Rotate z +90")) {
+            addToGlobalRotationDegrees(0, 0, 90);
+        }
+        ImGui::Separator();
+        ImGui::Text("Current MC Bounding Box: ");
+        double xyz[6];
+        Controller::getCurrentController()->getOverallMCBoundingBox(xyz);
+        for (int i = 0; i < 3; i++)
+            ImGui::Text("%c: (%.2f, %.2f)", 'x' + i, xyz[2 * i], xyz[2 * i + 1]);
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                     1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();
@@ -103,13 +133,48 @@ void ImGUIMenu::render() {
 
     glfwSwapBuffers(window);
 
-    glfwMakeContextCurrent(prevCtx);
+    glfwMakeContextCurrent(renderWindow);
+}
 
-    // execute actions in context
-    while (!action_queue.empty()) {
-        action_queue.front()();
-        action_queue.pop();
-    }
+void ImGUIMenu::resetView() {
+    double xyz[6];
+    dynamic_cast<ExtendedController*>(Controller::getCurrentController())->updateMCBoundingBox();
+    Controller::getCurrentController()->getOverallMCBoundingBox(xyz);
+    SceneElement::setMCRegionOfInterest(xyz);
+
+    // Set center
+    double xmid = 0.5 * (xyz[0] + xyz[1]);
+    double ymid = 0.5 * (xyz[2] + xyz[3]);
+    double zmid = 0.5 * (xyz[4] + xyz[5]);
+    cryph::AffPoint center(xmid, ymid, zmid);
+
+    // Set eye
+    double maxDelta = xyz[1] - xyz[0];
+    double delta = xyz[3] - xyz[2];
+    if (delta > maxDelta)
+        maxDelta = delta;
+    delta = xyz[5] - xyz[4];
+    if (delta > maxDelta)
+        maxDelta = delta;
+    double distEyeCenter = 2.0 * maxDelta;
+    cryph::AffPoint eye(xmid, ymid, zmid + distEyeCenter);
+
+    // Set up
+    cryph::AffVector up = cryph::AffVector::yu;
+
+    // Notify the ModelView of our MC->EC viewing requests:
+    SceneElement::setEyeCenterUp(eye, center, up);
+
+    // Perspective parameters
+    double zpp = -(distEyeCenter - 0.5 * maxDelta);
+    SceneElement::setProjectionPlaneZ(zpp);
+    double zmin = zpp - 2.0 * maxDelta;
+    double zmax = zpp + 0.5 * maxDelta;
+    SceneElement::setECZminZmax(zmin, zmax);
+    SceneElement::setAspectRatioPreservationEnabled(true);
+    SceneElement::setProjection(ORTHOGONAL);
+    SceneElement::resetGlobalDynamic();
+    SceneElement::resetGlobalZoom();
 }
 
 void ImGUIMenu::helpMarker(const char* desc) {
@@ -171,11 +236,11 @@ void ImGUIMenu::showEditMenu(bool* open) {
     vector<InteractivePoint*> selected = parent->getSelectedChildren();
     int i = 0;
     if (static_data.size() != selected.size()) {
-        std::cerr << "static_data reset\n";
+        // std::cerr << "static_data reset\n";
         static_data = vector<ProjPoint>(selected.size());
         for (i = 0; i < selected.size(); i++) {
             static_data[i] = *selected[i];
-            std::cerr << static_data[i] << "\n";
+            // std::cerr << static_data[i] << "\n";
         }
     }
     i = 0;
@@ -185,7 +250,7 @@ void ImGUIMenu::showEditMenu(bool* open) {
         char label0[20];
         std::sprintf(label0, "(x%d, y%d, z%d), w%d\0", i, i, i, i);
         if (ImGui::InputFloat4(label0, data, 2)) {
-            std::cerr << "updating static_data\n";
+            // std::cerr << "updating static_data\n";
             p.x = data[0] * data[3];
             p.y = data[1] * data[3];
             p.z = data[2] * data[3];
@@ -198,7 +263,7 @@ void ImGUIMenu::showEditMenu(bool* open) {
         static_cast<Interactive*>(currentlyPickedObject)->dirty();
         for (i = 0; i < selected.size(); i++) {
             selected[i]->assign(static_data[i]);
-            std::cerr << *selected[i] << std::endl;
+            // std::cerr << *selected[i] << std::endl;
             selected[i]->dirty();
         }
         parent->dirty();
@@ -208,7 +273,7 @@ void ImGUIMenu::showEditMenu(bool* open) {
         static_data = vector<ProjPoint>(selected.size());
         for (i = 0; i < selected.size(); i++) {
             static_data[i] = *selected[i];
-            std::cerr << static_data[i] << "\n";
+            // std::cerr << static_data[i] << "\n";
         }
     }
     ImGui::Text("Edit All Selected Points:");
@@ -265,14 +330,24 @@ void ImGUIMenu::addNurbsCurve() {
         if (currentlyPickedObject) {
             static_cast<Interactive*>(currentlyPickedObject)->clearSelection();
         }
-        auto addCurve = [this, getPoints]() {
-            InteractiveCurve* crv = new InteractiveCurve(
-                getPoints(nPoints), vector<double>(nPoints, 1.f), clamped, order);
-            Controller::getCurrentController()->addModel(crv);
-            crv->select();
-            currentlyPickedObject = crv;
-        };
-        action_queue.push(addCurve);
+        // auto addCurve = [this]() {
+        glfwMakeContextCurrent(renderWindow);
+        vector<AffPoint> pts;
+        for (int i = 0; i < nPoints; i++) {
+            pts.push_back(AffPoint(-nPoints + 2 * i, 1 - i % 2));
+        }
+        InteractiveCurve* crv =
+            new InteractiveCurve(pts, vector<double>(nPoints, 1.f), clamped, order);
+        dynamic_cast<ExtendedController*>(Controller::getCurrentController())->addModel(crv);
+        crv->select();
+        auto children = crv->getChildren();
+        for (auto p : children) {
+            p->select();
+        }
+        currentlyPickedObject = crv;
+        // };
+        // action_queue.push(addCurve);
+        glfwMakeContextCurrent(window);
         addCurveOpen = false;
     }
     // static vector<vec4>() for (int i = 0; i < nPoints; i++) {}

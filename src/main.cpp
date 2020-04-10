@@ -4,22 +4,32 @@
 
 #include <stdlib.h>
 
-#include "GLFWController.h"
+#include "ExtendedController.h"
 #include "SceneElement.h"
 #include "ShaderIF.h"
 #include "interactive/InteractiveCurve.h"
+#include "interactive/InteractiveSurface.h"
 
 using std::string;
 
 void createNewScene(GLFWController& c, string filename = "") {
-    vector<AffPoint> pts{
-        AffPoint(-1, 0, 0), AffPoint(-1, 1, 0), AffPoint(0, 1, 0),
-        AffPoint(1, 1, 0),  AffPoint(1, 0, 0),
-    };
-    InteractiveCurve* crv = new InteractiveCurve(pts);
+    // vector<AffPoint> pts{
+    //     AffPoint(-1, 0, 0), AffPoint(-1, 1, 0), AffPoint(0, 1, 0),
+    //     AffPoint(1, 1, 0),  AffPoint(1, 0, 0),
+    // };
+    // InteractiveCurve* crv = new InteractiveCurve(pts);
 
-    c.addModel(crv);
-    crv->print(std::cout);
+    // c.addModel(crv);
+
+    // vector<AffPoint> pts1{
+    //     AffPoint(-1, 0, 1),
+    //     AffPoint(-1, 1, 1),
+    //     AffPoint(0, 1, 1),
+    //     AffPoint(1, 1, 1),
+    // };
+    // InteractiveCurve* crv1 = new InteractiveCurve(pts1, vector<double>(4, 1.0), true);
+    auto surf = new InteractiveSurface();
+    c.addModel(surf);
 }
 
 void set3DViewingInformation(double xyz[6]) {
@@ -65,6 +75,8 @@ void initShaders() {
                           InteractivePoint::shaders.size());
     manager->createShader("nurbsCurve", InteractiveCurve::shaders.data(),
                           InteractiveCurve::shaders.size());
+    manager->createShader("nurbsSurface", InteractiveSurface::shaders.data(),
+                          InteractiveSurface::shaders.size());
     SceneElement::setShaderManager(manager);
 }
 
@@ -74,7 +86,7 @@ int main(int argc, char* argv[]) {
         fname = argv[1];
         std::cout << "Provided file: " << fname << '\n';
     }
-    GLFWController c("Surface Editor");
+    ExtendedController c("Surface Editor");
     c.reportVersions(std::cout);
     // ShaderIF* sIF = new ShaderIF(BezierCurve::bezShaders, 4);
     // ShaderIF* sIFpoints = new ShaderIF("shaders/basic.vert", "shaders/phong.frag");

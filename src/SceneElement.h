@@ -54,6 +54,7 @@ class SceneElement : public ModelView {
     static void reportMouseMovedToCB(double ldsX, double ldsY);
     // END: callbacks for picking and dragging
 
+    void resetMCBoundingBox();
     void updateMCBoundingBox(AffPoint pt);
     void getMCBoundingBox(double* xyzLimits) const;
     virtual void prepareForMove() {}

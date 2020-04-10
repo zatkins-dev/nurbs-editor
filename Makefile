@@ -23,7 +23,7 @@ LINK = g++ -fPIC -g -Wall
 LOCAL_UTIL_LIBRARIES = ../lib/libcryph.so ../lib/libfont.so ../lib/libglsl.so ../lib/libImageReader.so ../lib/libmvc.so
 
 OBJS = obj/main.o obj/SceneElement.o obj/ImGUIMenu.o obj/ShaderIFManager.o
-OBJS += obj/Interactive.o obj/InteractiveCurve.o obj/InteractivePoint.o 
+OBJS += obj/Interactive.o obj/InteractiveSurface.o obj/InteractiveCurve.o obj/InteractivePoint.o 
 OBJS += ext/imgui/build/obj/imgui_impl_glfw.o ext/imgui/build/obj/imgui_impl_opengl3.o
 OBJS += ext/imgui/build/obj/imgui.o ext/imgui/build/obj/imgui_demo.o ext/imgui/build/obj/imgui_draw.o ext/imgui/build/obj/imgui_widgets.o
 main: ensure-dirs $(OBJS) $(LOCAL_UTIL_LIBRARIES)

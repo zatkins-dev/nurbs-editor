@@ -7,7 +7,6 @@
 layout(location = 0) in vec3 mcPosition; // position in model coordinates
 in vec3 mcNormal;                        // normal vector in model coordinates
 in vec2 texCoords;
-uniform bool applyLDSinVert = true;
 // Output to fragment shader:
 out PVA {
     vec3 ecPosition;
@@ -27,8 +26,5 @@ void main(void) {
     pvaOut.texCoords = texCoords;
 
     // need to compute projection coordinates for given point
-    if (applyLDSinVert)
-        gl_Position = ec_lds * p_ecPosition;
-    else
-        gl_Position = p_ecPosition;
+    gl_Position = ec_lds * p_ecPosition;
 }

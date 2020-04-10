@@ -10,16 +10,4 @@ layout(location = 0) in vec4 mcPosition; // position in model coordinates
 // 2. Transformation
 uniform mat4 mc_ec;
 
-// out PVA {
-//     vec3 ecPosition;
-//     vec3 ecUnitNormal;
-//     vec2 texCoords;
-// }
-// pvaOut;
-
-void main(void) {
-    // pvaOut.ecPosition = mcPosition.xyz / mcPosition.w;
-    // pvaOut.ecUnitNormal = vec3(0, 0, 1);
-    // pvaOut.texCoords = vec2(0, 0);
-    gl_Position = mc_ec * mcPosition;
-}
+void main(void) { gl_Position = mc_ec * mcPosition; }

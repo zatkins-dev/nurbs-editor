@@ -56,13 +56,14 @@ InteractiveCurve::InteractiveCurve(vector<AffPoint> ctrl_pts, vector<float> knot
 
 void InteractiveCurve::initGeometry(vector<AffPoint> ctrl_pts, vector<double> weights) {
     for (int i = 0; i < ctrl_pts.size(); i++) {
-        children.push_back(new InteractivePoint(ctrl_pts[i], weights[i]));
+        children.push_back(new InteractivePoint(ctrl_pts[i], weights[i], i));
         children[i]->setParent(this);
         SceneElement::updateMCBoundingBox(ctrl_pts[i]);
     }
     GLint pgm;
     glGetIntegerv(GL_CURRENT_PROGRAM, &pgm);
     glUseProgram(shaderIFManager->get("nurbsCurve")->getShaderPgmID());
+
     glGenBuffers(1, &knotsSSB);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, knotsSSB);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * knots.size(), knots.data(),
@@ -71,6 +72,7 @@ void InteractiveCurve::initGeometry(vector<AffPoint> ctrl_pts, vector<double> we
 
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
+
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     vec4 buf[children.size()];
@@ -82,14 +84,37 @@ void InteractiveCurve::initGeometry(vector<AffPoint> ctrl_pts, vector<double> we
     glVertexAttribPointer(shaderIFManager->get("nurbsCurve")->pvaLoc("mcPosition"), 4, GL_FLOAT,
                           false, 0, 0);
     glEnableVertexAttribArray(shaderIFManager->get("nurbsCurve")->pvaLoc("mcPosition"));
+
+    /*
+     * Set up control polygon VAO/VBO
+     **/
+    glUseProgram(shaderIFManager->get("point")->getShaderPgmID());
+
+    glGenVertexArrays(1, &vaoPoly);
+    glBindVertexArray(vaoPoly);
+
+    glGenBuffers(1, &vboPoly);
+    glBindBuffer(GL_ARRAY_BUFFER, vboPoly);
+    vec3 buf3[children.size()];
+    i = 0;
+    for (auto p : children) {
+        p->aCoords(buf3, i++);
+    }
+    glBufferData(GL_ARRAY_BUFFER, children.size() * sizeof(vec3), buf3, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(shaderIFManager->get("point")->pvaLoc("mcPosition"), 3, GL_FLOAT, false,
+                          0, 0);
+    glEnableVertexAttribArray(shaderIFManager->get("point")->pvaLoc("mcPosition"));
+    glDisableVertexAttribArray(shaderIFManager->get("point")->pvaLoc("mcNormal"));
+    glDisableVertexAttribArray(shaderIFManager->get("point")->pvaLoc("texCoords"));
+
     glUseProgram(pgm);
 }
 
 void InteractiveCurve::p_checkForPick() {
     if (currentlyPickedObject == this) {
-        selected = false;
         currentlyPickedObject = nullptr;
     }
+    selected = false;
     for (auto c : children) {
         if (c->isSelected()) {
             selected = true;
@@ -107,23 +132,45 @@ void InteractiveCurve::p_checkForPick() {
     }
 };
 
-void InteractiveCurve::p_clickReleased() {}
+void InteractiveCurve::p_clickReleased() {
+    selected = false;
+    for (auto c : children) {
+        if (c->isSelected()) {
+            selected = true;
+            currentlyPickedObject = this;
+            break;
+        }
+    }
+    if (!selected) {
+        if (currentlyPickedObject == this) {
+            currentlyPickedObject = nullptr;
+        }
+    }
+}
 
 void InteractiveCurve::p_update() {
+
     GLint pgm;
     glGetIntegerv(GL_CURRENT_PROGRAM, &pgm);
     glUseProgram(shaderIFManager->get("nurbsCurve")->getShaderPgmID());
-    // std::cout << "shader program id: " << shaderIFManager->get("nurbsCurve")->getShaderPgmID()
-    //           << "\n";
 
     vec4 buf[children.size()];
-    for (int i = 0; i < children.size(); i++) {
+    for (int i = 0; i < children.size(); i++)
         children[i]->pCoords(buf, i);
-    }
 
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, children.size() * sizeof(vec4), buf);
+
+    glUseProgram(shaderIFManager->get("point")->getShaderPgmID());
+
+    vec3 buf3[children.size()];
+    for (int i = 0; i < children.size(); i++)
+        children[i]->aCoords(buf3, i);
+
+    glBindVertexArray(vaoPoly);
+    glBindBuffer(GL_ARRAY_BUFFER, vboPoly);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, children.size() * sizeof(vec3), buf3);
 
     glUseProgram(pgm);
 }
@@ -141,7 +188,7 @@ void InteractiveCurve::p_render() {
     } else {
         establishMaterialProperties(unselectedMat);
     }
-
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, knotsSSB);
     GLint vp[4];
     glGetIntegerv(GL_VIEWPORT, vp);
     glUniform2i(shaderIFManager->get("nurbsCurve")->ppuLoc("vpWidthHeight"), vp[2], vp[3]);
@@ -151,16 +198,34 @@ void InteractiveCurve::p_render() {
     glBindVertexArray(vao);
 
     glPatchParameteri(GL_PATCH_VERTICES, K);
-
     for (int i = 0; i < N() - K + 1; i++) {
-        if (!test) {
-            std::cout << "knotIndex=" << i + K - 1 << '\n';
-            std::cout << "Ctrl Points P_" << i << " - P_" << i + K << "\n";
-        }
         glUniform1i(shaderIFManager->get("nurbsCurve")->ppuLoc("knotIndex"), i + K - 1);
         glDrawArrays(GL_PATCHES, i, K);
     }
-    test = true;
+    glUseProgram(pgm);
+}
+
+void InteractiveCurve::p_renderPoly() {
+    GLint pgm;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &pgm);
+    shaderIF = shaderIFManager->get("point");
+    glUseProgram(shaderIF->getShaderPgmID());
+
+    establishView();
+    establishLightingEnvironment();
+
+    if (selected) {
+        establishMaterialProperties(selectedMat);
+    } else {
+        establishMaterialProperties(unselectedMat);
+    }
+
+    glBindVertexArray(vaoPoly);
+
+    glVertexAttrib3f(shaderIF->pvaLoc("mcNormal"), 0, 0, 1);
+    glVertexAttrib2f(shaderIF->pvaLoc("texCoords"), 0, 0);
+    glDrawArrays(GL_LINE_STRIP, 0, N());
+    shaderIF = shaderIFManager->get("nurbsCurve");
     glUseProgram(pgm);
 }
 

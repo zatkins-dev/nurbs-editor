@@ -25,6 +25,7 @@ class InteractiveCurve : public Interactive {
     virtual void p_checkForPick();
     virtual void p_update();
     virtual void p_render();
+    virtual void p_renderPoly();
 
   private:
     GLuint knotsSSB, vao, vbo;

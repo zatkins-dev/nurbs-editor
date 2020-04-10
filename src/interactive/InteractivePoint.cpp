@@ -5,8 +5,9 @@ vector<ShaderIF::ShaderSpec> InteractivePoint::shaders{
     {"shaders/phong.frag", GL_FRAGMENT_SHADER},
 };
 
-InteractivePoint::InteractivePoint(AffPoint p, double weight)
-    : Interactive(shaderIFManager->get("point")), ProjPoint(p, weight) {
+InteractivePoint::InteractivePoint(AffPoint p, double weight, int indexT, int indexS)
+    : Interactive(shaderIFManager->get("point")), ProjPoint(p, weight), tIndex(indexT),
+      sIndex(indexS) {
 
     updateMCBoundingBox(p);
     BasicShape* point = BasicShape::makeSphere(p, clickThreshold);
@@ -45,16 +46,12 @@ void InteractivePoint::p_moveBy(AffVector dist) {
 void InteractivePoint::p_update() {
     GLint pgm;
     glGetIntegerv(GL_CURRENT_PROGRAM, &pgm);
-    std::cout << "shader program id: " << shaderIFManager->get("point")->getShaderPgmID() << "\n";
     glUseProgram(shaderIFManager->get("point")->getShaderPgmID());
+    updateMCBoundingBox(P());
     if (sphere)
         delete sphere;
     BasicShape* point = BasicShape::makeSphere(P(), clickThreshold);
-    // std::cout << "mcPosition exists? " << shaderIFManager->get("point")->pvaExists("mcPosition")
-    //           << '\n';
-    // std::cout << "updating sphere\n";
     sphere = new BasicShapeRenderer(shaderIFManager->get("point"), point);
-    std::cout << "updated point\n";
     glUseProgram(pgm);
 }
 

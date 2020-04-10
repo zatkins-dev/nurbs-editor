@@ -5,6 +5,8 @@
 #include "AffPoint.h"
 #include "ProjPoint.h"
 
+#include "../ExtendedController.h"
+
 #include <algorithm>
 
 using cryph::AffPoint, cryph::ProjPoint;
@@ -14,7 +16,7 @@ class InteractivePoint;
 
 class Interactive : public SceneElement {
   public:
-    Interactive(ShaderIF* sIf) : SceneElement(sIf) {}
+    Interactive(ShaderIF* sIf) : SceneElement(sIf), parent(nullptr) {}
     virtual ~Interactive() {}
 
     // Interactivity
@@ -36,10 +38,14 @@ class Interactive : public SceneElement {
     virtual void print(std::ostream&) const {};
 
   protected:
+    GLuint vaoPoly, vboPoly;
     Interactive* parent = nullptr;
     vector<InteractivePoint*> children;
     bool selected = false;
     bool dirtyBit = false;
+    bool renderPts = true;
+    bool renderPoly = true;
+    bool renderObject = true;
 
     virtual void p_prepareForMove(){};
     virtual void p_moveBy(AffVector dist){};
@@ -47,6 +53,7 @@ class Interactive : public SceneElement {
     virtual void p_checkForPick(){};
     virtual void p_update(){};
     virtual void p_render(){};
+    virtual void p_renderPoly(){};
 
     const static PhongMaterial selectedMat;
     const static PhongMaterial unselectedMat;

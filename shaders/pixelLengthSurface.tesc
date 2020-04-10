@@ -2,8 +2,12 @@
 
 layout(vertices = 25) out;
 
+layout(std430, binding = 1) buffer CtrPts { vec4 P[]; };
+
 uniform ivec2 vpWidthHeight = ivec2(500, 500);
 uniform float maxPixelLength = 15.0;
+
+uniform mat4 mc_ec, ec_lds;
 
 bool validLDSCoord(float v) {
     if (isinf(v) || isnan(v))
@@ -16,8 +20,8 @@ float getPixelMeasure() {
     float xmax = 0.0;
     float ymin = 1.0;
     float ymax = 0.0;
-    for (int i = 0; i < gl_in.length(); i++) {
-        vec4 pos = gl_in[i].gl_Position;
+    for (int i = 0; i < P.length(); i++) {
+        vec4 pos = ec_lds * mc_ec * P[i];
         vec2 p = pos.xy / pos.w;
         if (validLDSCoord(p.x)) {
             if (xmin > xmax)
@@ -45,6 +49,10 @@ float getPixelMeasure() {
 }
 
 void main() {
+    // if (gl_InvocationID == 0) {
+    //     for (int i = 0; i < P.length(); i++)
+    //         P[i] = mc_ec * P[i];
+    // }
     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
 
     float pixelMeasure = getPixelMeasure();
