@@ -1,0 +1,11 @@
+Project 2 - Zachary Atkins
+
+Instructions:
+This project uses Shader Storage Buffer Objects, so it will not run on Mac. 
+
+To run first run `make`, then run `main [filename]`. Should be that easy.
+See the help tooltip at the top of the edit menu for specific selection/ dragging modifiers.
+Curves are only loosely supported, and may be buggy and/or cause crashes. 
+
+This project relies on Dear ImGui. See https://github.com/ocornut/imgui for more information. 
+No installation should be necessary, as the required ImGui source files are compiled and dynamically linked.

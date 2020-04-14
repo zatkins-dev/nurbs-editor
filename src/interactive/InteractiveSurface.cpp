@@ -23,14 +23,14 @@ InteractiveSurface::InteractiveSurface() : Interactive(shaderIFManager->get("nur
 
     for (int i = 0; i < kT; i++)
         knotsT.push_back(0.0);
-    for (int i = 1; i <= nT + 1 - (kT - 1); i++)
+    for (int i = 1; i <= nT - (kT - 1); i++)
         knotsT.push_back(i);
     for (int i = 0; i < kT; i++)
         knotsT.push_back(nT + 1 - (kT - 1));
 
     for (int i = 0; i < kS; i++)
         knotsS.push_back(0.0);
-    for (int i = 1; i <= nS + 1 - (kS - 1); i++)
+    for (int i = 1; i <= nS - (kS - 1); i++)
         knotsS.push_back(i);
     for (int i = 0; i < kS; i++)
         knotsS.push_back(nS + 1 - (kS - 1));
@@ -38,22 +38,65 @@ InteractiveSurface::InteractiveSurface() : Interactive(shaderIFManager->get("nur
     initGeometry(ctrl_pts, weights);
 }
 
-// Creates uniformly spaced knots that are clamped if @param `clamped` is true
-InteractiveSurface::InteractiveSurface(vector<AffPoint> ctrl_pts, vector<double> weights,
-                                       bool clamped, int order)
-    : Interactive(shaderIFManager->get("nurbsSurface")), kT(order) {
+InteractiveSurface::InteractiveSurface(AffPoint base, AffPoint tmax, AffPoint smax, int nS, int nT,
+                                       bool clamped, int orderS, int orderT)
+    : Interactive(shaderIFManager->get("nurbsSurface")), nS(nS), nT(nT), kS(orderS), kT(orderT) {
+    vector<AffPoint> ctrl_pts;
+    AffVector dT = (tmax - base) / (double)nT;
+    AffVector dS = (smax - base) / (double)nS;
+    for (int i = 0; i <= nS; i++)
+        for (int j = 0; j <= nT; j++)
+            ctrl_pts.push_back(base + i * dS + j * dT);
+
+    vector<double> weights(ctrl_pts.size(), 1);
+
     if (clamped) {
         for (int i = 0; i < kT; i++)
             knotsT.push_back(0.0);
-
-        for (int i = 1; i <= ctrl_pts.size() - kT; i++)
+        for (int i = 1; i <= nT - (kT - 1); i++)
             knotsT.push_back(i);
-
         for (int i = 0; i < kT; i++)
-            knotsT.push_back(ctrl_pts.size() - kT + 1);
+            knotsT.push_back(nT + 1 - (kT - 1));
+
+        for (int i = 0; i < kS; i++)
+            knotsS.push_back(0.0);
+        for (int i = 1; i <= nS - (kS - 1); i++)
+            knotsS.push_back(i);
+        for (int i = 0; i < kS; i++)
+            knotsS.push_back(nS + 1 - (kS - 1));
     } else {
-        for (int i = 0; i <= ctrl_pts.size() + kT; i++)
+        for (int i = 0; i <= nT + kT; i++)
             knotsT.push_back(i);
+        for (int i = 0; i <= nS + kS; i++)
+            knotsS.push_back(i);
+    }
+
+    initGeometry(ctrl_pts, weights);
+}
+
+// Creates uniformly spaced knots that are clamped if @param `clamped` is true
+InteractiveSurface::InteractiveSurface(vector<AffPoint> ctrl_pts, int nS, int nT, bool clamped,
+                                       int orderS, int orderT, vector<double> weights)
+    : Interactive(shaderIFManager->get("nurbsSurface")), kT(orderT), kS(orderS), nT(nT), nS(nS) {
+    if (clamped) {
+        for (int i = 0; i < kT; i++)
+            knotsT.push_back(0.0);
+        for (int i = 1; i <= nT - (kT - 1); i++)
+            knotsT.push_back(i);
+        for (int i = 0; i < kT; i++)
+            knotsT.push_back(nT + 1 - (kT - 1));
+
+        for (int i = 0; i < kS; i++)
+            knotsS.push_back(0.0);
+        for (int i = 1; i <= nS - (kS - 1); i++)
+            knotsS.push_back(i);
+        for (int i = 0; i < kS; i++)
+            knotsS.push_back(nS + 1 - (kS - 1));
+    } else {
+        for (int i = 0; i <= nT + kT; i++)
+            knotsT.push_back(i);
+        for (int i = 0; i <= nS + kS; i++)
+            knotsS.push_back(i);
     }
     if (weights.size() != ctrl_pts.size()) {
         weights.clear();
@@ -64,11 +107,12 @@ InteractiveSurface::InteractiveSurface(vector<AffPoint> ctrl_pts, vector<double>
 }
 
 // Uses provided knot vector
-InteractiveSurface::InteractiveSurface(vector<AffPoint> ctrl_pts, vector<float> knotsT,
-                                       vector<double> weights, int orderT)
-    : Interactive(shaderIFManager->get("nurbsSurface")), knotsT(knotsT), kT(orderT) {
-    if (kT <= 0 || knotsT.size() != (ctrl_pts.size() + kT + 1))
-        return;
+InteractiveSurface::InteractiveSurface(vector<AffPoint> ctrl_pts, int nS, int nT,
+                                       vector<float> knotsS, vector<float> knotsT, int orderS,
+                                       int orderT, vector<double> weights)
+    : Interactive(shaderIFManager->get("nurbsSurface")), nS(nS), nT(nT), knotsS(knotsS), kS(orderS),
+      knotsT(knotsT), kT(orderT) {
+
     if (weights.size() != ctrl_pts.size()) {
         weights.clear();
         weights = vector<double>(ctrl_pts.size(), 1);
@@ -132,46 +176,42 @@ void InteractiveSurface::initGeometry(vector<AffPoint> ctrl_pts, vector<double> 
     // glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(debug), &debug, GL_STATIC_READ);
     // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, ssboDebug);
 
-    // glGenVertexArrays(1, &vao);
-    // glBindVertexArray(vao);
-
-    // glGenBuffers(1, &vbo);
-    // glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    // vec4 buf[children.size()];
-    // int i = 0;
-    // for (auto p : children) {
-    //     p->pCoords(buf, i++);
-    // }
-    // glBufferData(GL_ARRAY_BUFFER, children.size() * sizeof(vec4), buf, GL_DYNAMIC_DRAW);
-    // glVertexAttribPointer(shaderIFManager->get("nurbsSurface")->pvaLoc("mcPosition"), 4,
-    // GL_FLOAT,
-    //                       false, 0, 0);
-    // glEnableVertexAttribArray(shaderIFManager->get("nurbsSurface")->pvaLoc("mcPosition"));
-
     /*
-     * Set up control polygon VAO/VBO
+     * Set up control polygon VAO/VBO/EBO
      **/
-    // glUseProgram(shaderIFManager->get("point")->getShaderPgmID());
+    glUseProgram(shaderIFManager->get("point")->getShaderPgmID());
 
-    // glGenVertexArrays(1, &vaoPoly);
-    // glBindVertexArray(vaoPoly);
+    glGenVertexArrays(1, &vaoPoly);
+    glBindVertexArray(vaoPoly);
 
-    // glGenBuffers(1, &vboPoly);
-    // glBindBuffer(GL_ARRAY_BUFFER, vboPoly);
-    // vec3 buf3[children.size()];
-    // i = 0;
-    // for (auto p : children) {
-    //     p->aCoords(buf3, i++);
-    // }
-    // glBufferData(GL_ARRAY_BUFFER, children.size() * sizeof(vec3), buf3, GL_DYNAMIC_DRAW);
-    // glVertexAttribPointer(shaderIFManager->get("point")->pvaLoc("mcPosition"), 3, GL_FLOAT,
-    // false,
-    //                       0, 0);
-    // glEnableVertexAttribArray(shaderIFManager->get("point")->pvaLoc("mcPosition"));
-    // glDisableVertexAttribArray(shaderIFManager->get("point")->pvaLoc("mcNormal"));
-    // glDisableVertexAttribArray(shaderIFManager->get("point")->pvaLoc("texCoords"));
+    glGenBuffers(1, &vboPoly);
+    glBindBuffer(GL_ARRAY_BUFFER, vboPoly);
+    vec3 buf3[children.size()];
+    i = 0;
+    for (auto p : children) {
+        p->aCoords(buf3, i++);
+    }
+    GLuint eboBuf[nT + 1][nS + 1];
+    for (uint i = 0; i <= nT; i++)
+        for (uint j = 0; j <= nS; j++) {
+            eboBuf[i][j] = at(j, i);
+        }
+    auto point = shaderIFManager->get("point");
+    glBufferData(GL_ARRAY_BUFFER, children.size() * sizeof(vec3), buf3, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(point->pvaLoc("mcPosition"), 3, GL_FLOAT, false, 0, 0);
+    glEnableVertexAttribArray(point->pvaLoc("mcPosition"));
 
-    // glUseProgram(pgm);
+    ebo = new GLuint[nT + 1];
+    glGenBuffers(nT + 1, ebo);
+    for (int i = 0; i <= nT; i++) {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo[i]);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * (nS + 1), eboBuf[i], GL_STATIC_DRAW);
+    }
+
+    glDisableVertexAttribArray(point->pvaLoc("mcNormal"));
+    glDisableVertexAttribArray(point->pvaLoc("texCoords"));
+
+    glUseProgram(pgm);
 }
 
 void InteractiveSurface::p_checkForPick() {
@@ -222,20 +262,20 @@ void InteractiveSurface::p_update() {
     for (int i = 0; i < children.size(); i++)
         children[i]->pCoords(buf, i);
 
-    // glBindVertexArray(vao);
+    glBindVertexArray(vao);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboP);
     glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, children.size() * sizeof(vec4), buf);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssboP);
 
-    // glUseProgram(shaderIFManager->get("point")->getShaderPgmID());
+    glUseProgram(shaderIFManager->get("point")->getShaderPgmID());
 
-    // vec3 buf3[children.size()];
-    // for (int i = 0; i < children.size(); i++)
-    //     children[i]->aCoords(buf3, i);
+    vec3 buf3[children.size()];
+    for (int i = 0; i < children.size(); i++)
+        children[i]->aCoords(buf3, i);
 
-    // glBindVertexArray(vaoPoly);
-    // glBindBuffer(GL_ARRAY_BUFFER, vboPoly);
-    // glBufferSubData(GL_ARRAY_BUFFER, 0, children.size() * sizeof(vec3), buf3);
+    glBindVertexArray(vaoPoly);
+    glBindBuffer(GL_ARRAY_BUFFER, vboPoly);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, children.size() * sizeof(vec3), buf3);
 
     glUseProgram(pgm);
 }
@@ -249,9 +289,9 @@ void InteractiveSurface::p_render() {
     establishLightingEnvironment();
 
     if (selected) {
-        establishMaterialProperties(selectedMat);
+        establishMaterialProperties(*mat_select);
     } else {
-        establishMaterialProperties(unselectedMat);
+        establishMaterialProperties(*mat_deselect);
     }
     glBindVertexArray(vao);
 
@@ -269,7 +309,7 @@ void InteractiveSurface::p_render() {
     glUniform1i(shaderIFManager->get("nurbsSurface")->ppuLoc("nS"), nS);
     glUniform1i(shaderIFManager->get("nurbsSurface")->ppuLoc("nT"), nT);
 
-    // glBindVertexArray(vao);
+    glBindVertexArray(vao);
 
     glPatchParameteri(GL_PATCH_VERTICES, 1);
     glVertexAttrib4f(shaderIFManager->get("nurbsSurface")->pvaLoc("mcPosition"), 0, 0, 0, 1);
@@ -278,40 +318,77 @@ void InteractiveSurface::p_render() {
     glUseProgram(pgm);
 }
 
-// void InteractiveSurface::p_renderPoly() {
-//     GLint pgm;
-//     glGetIntegerv(GL_CURRENT_PROGRAM, &pgm);
-//     shaderIF = shaderIFManager->get("point");
-//     glUseProgram(shaderIF->getShaderPgmID());
+void InteractiveSurface::p_renderPoly() {
+    GLint pgm;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &pgm);
+    shaderIF = shaderIFManager->get("point");
+    glUseProgram(shaderIF->getShaderPgmID());
 
-//     establishView();
-//     establishLightingEnvironment();
+    establishView();
+    establishLightingEnvironment();
 
-//     if (selected) {
-//         establishMaterialProperties(selectedMat);
-//     } else {
-//         establishMaterialProperties(unselectedMat);
-//     }
+    if (selected) {
+        establishMaterialProperties(selectedMat);
+    } else {
+        establishMaterialProperties(unselectedMat);
+    }
 
-//     glBindVertexArray(vaoPoly);
+    glBindVertexArray(vaoPoly);
 
-//     glVertexAttrib3f(shaderIF->pvaLoc("mcNormal"), 0, 0, 1);
-//     glVertexAttrib2f(shaderIF->pvaLoc("texCoords"), 0, 0);
-//     glDrawArrays(GL_LINE_STRIP, 0, N());
-//     shaderIF = shaderIFManager->get("nurbsSurface");
-//     glUseProgram(pgm);
-// }
+    glVertexAttrib3f(shaderIF->pvaLoc("mcNormal"), 0, 0, 1);
+    glVertexAttrib2f(shaderIF->pvaLoc("texCoords"), 0, 0);
+    for (int i = 0; i <= nS; i++) {
+        glDrawArrays(GL_LINE_STRIP, at(i, 0), nT + 1);
+    }
+    for (int i = 0; i <= nT; i++) {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo[i]);
+        glDrawElements(GL_LINE_STRIP, nS + 1, GL_UNSIGNED_INT, nullptr);
+    }
+    shaderIF = shaderIFManager->get("nurbsSurface");
+    glUseProgram(pgm);
+}
+
+bool InteractiveSurface::handleCommand(unsigned char key, double ldsX, double ldsY) {
+    if (currentlyPickedObject == this) {
+        if (key == 'r') {
+            for (auto p : getSelectedChildren())
+                selectRow(p->s());
+        } else if (key == 'c') {
+            for (auto p : getSelectedChildren())
+                selectCol(p->t());
+        } else
+            return true;
+        return false;
+    }
+    return true;
+}
+
+void InteractiveSurface::selectRow(int i) {
+    if (i < 0 || i > nS)
+        return; // fail quietly
+
+    for (int j = 0; j <= nT; j++)
+        children[at(i, j)]->setSelected();
+}
+
+void InteractiveSurface::selectCol(int j) {
+    if (j < 0 || j > nT)
+        return; // fail quietly
+
+    for (int i = 0; i <= nS; i++)
+        children[at(i, j)]->setSelected();
+}
 
 void InteractiveSurface::print(std::ostream& os) const {
-    os << "c " << nS << " " << nT << " " << kS << " " << kT << std::endl;
-    for (auto* pt : children)
+    os << "S" << getName() << std::endl;
+    os << nS << " " << nT << std::endl;
+    os << kS << " " << kT << std::endl;
+    for (auto pt : children)
         os << pt->x / pt->w << " " << pt->y / pt->w << " " << pt->z / pt->w << " " << pt->w << '\n';
-    os << "s ";
     for (float s : knotsS)
         os << s << " ";
-    os << '\n';
-    os << "t ";
+    os << std::endl;
     for (float t : knotsT)
         os << t << " ";
-    os << '\n';
+    os << std::endl;
 }

@@ -1,6 +1,6 @@
 #version 450 core
 
-layout(vertices = 25) out;
+layout(vertices = 32) out;
 
 layout(std430, binding = 1) buffer CtrPts { vec4 P[]; };
 
@@ -16,13 +16,15 @@ bool validLDSCoord(float v) {
 }
 
 float getPixelMeasure() {
+    vec4 pos = ec_lds * mc_ec * P[0];
+    vec2 p = pos.xy / pos.w;
     float xmin = 1.0;
     float xmax = 0.0;
     float ymin = 1.0;
     float ymax = 0.0;
     for (int i = 0; i < P.length(); i++) {
-        vec4 pos = ec_lds * mc_ec * P[i];
-        vec2 p = pos.xy / pos.w;
+        pos = ec_lds * mc_ec * P[i];
+        p = pos.xy / pos.w;
         if (validLDSCoord(p.x)) {
             if (xmin > xmax)
                 xmin = xmax = p.x;

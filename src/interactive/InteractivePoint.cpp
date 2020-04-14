@@ -5,7 +5,7 @@ vector<ShaderIF::ShaderSpec> InteractivePoint::shaders{
     {"shaders/phong.frag", GL_FRAGMENT_SHADER},
 };
 
-InteractivePoint::InteractivePoint(AffPoint p, double weight, int indexT, int indexS)
+InteractivePoint::InteractivePoint(AffPoint p, double weight, int indexS, int indexT)
     : Interactive(shaderIFManager->get("point")), ProjPoint(p, weight), tIndex(indexT),
       sIndex(indexS) {
 

@@ -14,6 +14,7 @@ class InteractiveCurve : public Interactive {
     InteractiveCurve(vector<AffPoint> ctrl_pts, vector<float> knots,
                      vector<double> weights = vector<double>(), int order = 4);
     virtual ~InteractiveCurve() {}
+    virtual Type type() { return Curve; }
 
     static vector<ShaderIF::ShaderSpec> shaders;
     virtual void print(std::ostream&) const;

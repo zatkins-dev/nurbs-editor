@@ -4,6 +4,7 @@
 
 #include "examples/imgui_impl_glfw.h"
 #include "examples/imgui_impl_opengl3.h"
+#include "misc/cpp/imgui_stdlib.h"
 #include <stdio.h>
 
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
@@ -32,11 +33,12 @@ using namespace gl;
 
 #include "SceneElement.h"
 
-#include "ExtendedController.h"
+#include "InteractiveController.h"
 #include "ShaderIFManager.h"
 #include "interactive/Interactive.h"
 #include "interactive/InteractiveCurve.h"
 #include "interactive/InteractivePoint.h"
+#include "interactive/InteractiveSurface.h"
 
 #include <functional>
 #include <map>
@@ -67,12 +69,15 @@ class ImGUIMenu : public SceneElement {
     GLFWwindow* renderWindow;
     std::queue<function<void()>> action_queue;
 
+    std::string fname;
+
     typedef float vec4[4];
     int selected_drag = -1;
     bool show_add_window = false;
     bool show_drag_window = true;
     bool show_edit_window = false;
     // edit state
+    bool show_object_list = true;
     vector<ProjPoint> static_data;
     AffVector v;
     // add curve state
@@ -82,12 +87,21 @@ class ImGUIMenu : public SceneElement {
     bool clamped = true;
     // add surface state
     bool addSurfaceOpen = false;
-    int nPointsU = 5;
-    int nPointsV = 5;
-    int orderU = 4;
-    int orderV = 4;
-    bool clampedU = true;
-    bool clampedV = true;
+    int nPointsS = 5;
+    int nPointsT = 5;
+    int orderS = 4;
+    int orderT = 4;
+    bool clampedS = true;
+    bool clampedT = true;
+    vector<float> knotsS;
+    vector<float> knotsT;
+    vec3 p0{0, 0, 0}, ps{1, 0, 0}, pt{0, 1, 0};
+    const char* knotsChoices[3]{
+        "Uniform",
+        "Clamped",
+        "Manual Entry",
+    };
+    const char* knotsChoice = knotsChoices[0];
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -98,6 +112,7 @@ class ImGUIMenu : public SceneElement {
     void showDragRestrictMenu(bool* open);
     void showAddMenu(bool* open);
     void showEditMenu(bool* open);
+    void showObjectList();
     void addNurbsCurve();
     void addNurbsSurface();
     void applyDragRestriction();

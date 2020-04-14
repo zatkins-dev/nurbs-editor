@@ -1,4 +1,6 @@
 #include "Interactive.h"
+
+#include "../InteractiveController.h"
 #include "InteractivePoint.h"
 
 const PhongMaterial Interactive::selectedMat((float[]){1, 0.0, 0.0}, (float[]){1, 0, 0},
@@ -52,6 +54,13 @@ void Interactive::clearSelection() {
     }
 };
 
+void Interactive::selectAll() {
+    for (auto c : children) {
+        c->selected = true;
+    }
+    selected = true;
+}
+
 vector<InteractivePoint*> Interactive::getSelectedChildren() {
     vector<InteractivePoint*> selectedChildren;
     std::copy_if(children.begin(), children.end(), std::back_inserter(selectedChildren),
@@ -69,7 +78,7 @@ void Interactive::update() {
     }
     p_update();
     if (!parent) {
-        dynamic_cast<ExtendedController*>(Controller::getCurrentController())
+        dynamic_cast<InteractiveController*>(Controller::getCurrentController())
             ->updateMCBoundingBox();
     }
     dirtyBit = false;

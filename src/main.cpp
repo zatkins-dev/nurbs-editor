@@ -2,9 +2,10 @@
 
 #include "ImGUIMenu.h"
 
+#include <fstream>
 #include <stdlib.h>
 
-#include "ExtendedController.h"
+#include "InteractiveController.h"
 #include "SceneElement.h"
 #include "ShaderIF.h"
 #include "interactive/InteractiveCurve.h"
@@ -12,7 +13,7 @@
 
 using std::string;
 
-void createNewScene(GLFWController& c, string filename = "") {
+void createNewScene(InteractiveController& c, string filename = "") {
     // vector<AffPoint> pts{
     //     AffPoint(-1, 0, 0), AffPoint(-1, 1, 0), AffPoint(0, 1, 0),
     //     AffPoint(1, 1, 0),  AffPoint(1, 0, 0),
@@ -67,7 +68,7 @@ void set3DViewingInformation(double xyz[6]) {
     ModelView::setECZminZmax(zmin, zmax);
 }
 
-void initGUI(GLFWController& c) { c.addModel(new ImGUIMenu()); }
+void initGUI(InteractiveController& c) { c.addModel(new ImGUIMenu()); }
 
 void initShaders() {
     ShaderIFManager* manager = new ShaderIFManager();
@@ -81,12 +82,7 @@ void initShaders() {
 }
 
 int main(int argc, char* argv[]) {
-    string fname;
-    if (argc > 1) {
-        fname = argv[1];
-        std::cout << "Provided file: " << fname << '\n';
-    }
-    ExtendedController c("Surface Editor");
+    InteractiveController c("Surface Editor", MVC_USE_DEPTH_BIT);
     c.reportVersions(std::cout);
     // ShaderIF* sIF = new ShaderIF(BezierCurve::bezShaders, 4);
     // ShaderIF* sIFpoints = new ShaderIF("shaders/basic.vert", "shaders/phong.frag");
@@ -95,7 +91,15 @@ int main(int argc, char* argv[]) {
 
     // createScene(c, sIFpoints, sIFbezier, sIFspline, fname);
     initShaders();
-    createNewScene(c);
+    string fname;
+    if (argc > 1) {
+        fname = argv[1];
+        std::cout << "Provided file: " << fname << '\n';
+        std::ifstream is(fname);
+        c.loadAllFromStream(is);
+        is.close();
+    } else
+        createNewScene(c);
     glClearColor(1.0, 1.0, 1.0, 1.0);
 
     // callbacks for picking and dragging

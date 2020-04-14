@@ -15,6 +15,9 @@ class InteractivePoint : public Interactive, public ProjPoint {
         if (sphere)
             delete sphere;
     }
+    virtual Type type() { return Point; }
+    void setSelected(bool s = true) { selected = s; }
+
     static vector<ShaderIF::ShaderSpec> shaders;
     void print(std::ostream& os) const {
         os << x / w << " " << y / w << " " << z / w << " " << w << std::endl;
@@ -26,9 +29,9 @@ class InteractivePoint : public Interactive, public ProjPoint {
         w = xyzw[3];
     }
     void assign(ProjPoint xyzw) {
-        x = xyzw.x * xyzw.w;
-        y = xyzw.y * xyzw.w;
-        z = xyzw.z * xyzw.w;
+        x = xyzw.x;
+        y = xyzw.y;
+        z = xyzw.z;
         w = xyzw.w;
     }
     std::function<AffPoint()> P = [this]() { return AffPoint(x, y, z) / w; };
