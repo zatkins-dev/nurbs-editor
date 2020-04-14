@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/main",
             "args": [
-                "testPoly.surfs"
+                "demo.surfs"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

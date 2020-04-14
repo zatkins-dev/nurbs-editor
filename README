@@ -3,7 +3,7 @@ Project 2 - Zachary Atkins
 Instructions:
 This project uses Shader Storage Buffer Objects, so it will not run on Mac. 
 
-To run first run `make`, then run `main [filename]`. Should be that easy.
+To run first run `make`, then run `./main demo.surfs` for a demo surface. Should be that easy.
 See the help tooltip at the top of the edit menu for specific selection/ dragging modifiers.
 Curves are only loosely supported, and may be buggy and/or cause crashes. 
 

@@ -79,13 +79,15 @@ bool InteractiveController::loadAllFromStream(std::istream& is) {
     for (int i = 0; i < nModels; i++) {
         std::string line;
         std::getline(is, line);
+        if (line == " ")
+            std::getline(is, line);
         if (line == "BEGIN") {
             std::getline(is, line);
             auto head = std::stringstream(line);
             char type;
             string name;
             head >> type;
-            head >> name;
+            std::getline(head, name);
 
             if (type == 'S') {
                 int nS, nT;

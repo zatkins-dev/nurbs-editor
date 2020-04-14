@@ -91,7 +91,6 @@ clean-all: clean clean-imgui
 .PHONY .SILENT: ensure-dirs
 ensure-dirs:
 	mkdir -p ./obj
-	mkdir -p ./bin
 	mkdir -p ../lib
 
 .PHONY : dist
